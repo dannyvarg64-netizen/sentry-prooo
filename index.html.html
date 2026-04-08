@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sentry Pro v7.5 - Secure Edition</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root { --primary: #3b82f6; --bg: #0f172a; }
+    body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+    .screen { display: none; padding: 25px; height: 100vh; overflow-y: auto; }
+    .active { display: block; animation: fadeIn 0.5s ease-in-out; }
+    #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+    .spinner { width: 50px; height: 50px; border: 5px solid #1e293b; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+    .cam-box { width: 100%; border-radius: 20px; overflow: hidden; border: 2px solid var(--primary); background: #000; box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+    video { width: 100%; display: block; }
+    .btn-massive { height: 65px; font-weight: bold; border-radius: 18px; text-transform: uppercase; transition: 0.3s; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+  <div id="loader">
+    <div class="spinner mb-3"></div>
+    <div id="loader-text" class="small text-primary fw-bold">PROCESANDO...</div>
+  </div>
+
+  <div id="scr-login" class="screen">
+    <div class="text-center mt-5 mb-5">
+        <h1 class="fw-bold text-primary">SENTRY PRO</h1>
+        <p class="text-muted">Acceso Restringido</p>
+    </div>
+    <div class="card bg-dark border-secondary p-4 shadow-lg">
+      <input type="text" id="user-id" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="ID de Guardia">
+      <input type="password" id="pass" class="form-control mb-4 bg-dark text-white border-secondary" placeholder="Contraseña">
+      <button onclick="iniciarFlujo()" class="btn btn-primary w-100 btn-massive">INGRESAR AL SISTEMA</button>
+    </div>
+  </div>
+
+  <div id="scr-face" class="screen">
+    <h4 class="text-center mb-4" id="face-title">VERIFICACIÓN BIOMÉTRICA</h4>
+    <div class="cam-box mb-4"><video id="video-face" autoplay playsinline></video></div>
+    <button onclick="confirmarAsistencia()" class="btn btn-success w-100 btn-massive shadow">CONFIRMAR IDENTIDAD</button>
+  </div>
+
+  <div id="scr-rondin" class="screen">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="badge bg-primary px-3 py-2" id="user-display">ID: --</div>
+        <button onclick="irACheckOut()" class="btn btn-outline-danger btn-sm fw-bold">SALIDA</button>
+    </div>
+    <div id="qr-reader" class="rounded mb-3" style="min-height: 180px; background: #1e293b;"></div>
+    <div class="cam-box mb-3"><video id="video-operacion" autoplay playsinline></video></div>
+    <input type="text" id="qr-res" class="form-control mb-2 bg-black text-info text-center fw-bold border-0" placeholder="ESCANEANDO QR..." readonly>
+    <textarea id="notes" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="Notas de inspección..."></textarea>
+    <button onclick="enviarEvidencia()" class="btn btn-primary w-100 btn-massive shadow">GUARDAR RONDÍN</button>
+  </div>
+
+  <canvas id="canvas-wm" style="display:none;"></canvas>
+
+<script>
+  let streamActivo = null;
+  let modoActual = 'ENTRADA';
+  let coords = null;
+
+  // 1. PEGA AQUÍ TU URL ACTUALIZADA DE GOOGLE APPS SCRIPT
+  const webAppUrl = "https://script.google.com/macros/s/AKfycbxzT7tfCW3PYtGKL6lJaCRdI2iw0ONBiPSQK9GQBBl_-5WGDu4CxBCRmIMQOUbpUugoSg/exec"; 
+
+  window.onload = () => {
+    navigator.geolocation.watchPosition(p => coords = p.coords);
+    if (localStorage.getItem('jornada_activa') === 'true') {
+        document.getElementById('user-display').innerText = "ID: " + localStorage.getItem('user_id');
+        irA('scr-rondin');
+        iniciarCamara('video-operacion', 'environment');
+        iniciarQR();
+    } else { irA('scr-login'); }
+  };
+
+  function mostrarLoader(texto, visible) {
+    const loader = document.getElementById('loader');
+    document.getElementById('loader-text').innerText = texto;
+    loader.style.display = visible ? 'flex' : 'none';
+  }
+
+  // --- FLUJO DE SEGURIDAD ---
+  async function iniciarFlujo() {
+    const user = document.getElementById('user-id').value;
+    const pass = document.getElementById('pass').value;
+
+    if(!user || !pass) return alert("Ingresa tus credenciales.");
+
+    mostrarLoader("VALIDANDO CON SERVIDOR...", true);
+
+    try {
+        const respuesta = await fetch(`${webAppUrl}?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`);
+        const resultado = await respuesta.text();
+        mostrarLoader("", false);
+
+        if (resultado.trim() === "VALIDO") {
+            localStorage.setItem('user_id', user);
+            document.getElementById('user-display').innerText = "ID: " + user;
+            modoActual = 'ENTRADA';
+            irA('scr-face');
+            iniciarCamara('video-face', 'user');
+        } else {
+            alert("❌ Acceso Denegado: Usuario o Contraseña incorrectos.");
+            document.getElementById('pass').value = "";
+        }
+    } catch (e) {
+        mostrarLoader("", false);
+        alert("Error de conexión. Revisa tu internet o la URL del script.");
+    }
+  }
+
+  async function confirmarAsistencia() {
+    mostrarLoader("SUBIENDO ASISTENCIA...", true);
+    const video = document.getElementById('video-face');
+    const foto = capturarFoto(video, "ASISTENCIA " + modoActual);
+    
+    const payload = {
+        action: 'ASISTENCIA',
+        tipo: modoActual,
+        user: localStorage.getItem('user_id'),
+        img: foto,
+        lat: coords ? coords.latitude : 0,
+        lon: coords ? coords.longitude : 0
+    };
+
+    await fetch(webAppUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+    
+    mostrarLoader("", false);
+    if(modoActual === 'ENTRADA') {
+        localStorage.setItem('jornada_activa', 'true');
+        irA('scr-rondin');
+        iniciarCamara('video-operacion', 'environment');
+        iniciarQR();
+    } else {
+        localStorage.clear();
+        alert("Jornada finalizada.");
+        location.reload();
+    }
+  }
+
+  async function enviarEvidencia() {
+    const qr = document.getElementById('qr-res').value;
+    if(!qr) return alert("Escanea el punto QR primero");
+
+    mostrarLoader("GUARDANDO RONDÍN...", true);
+    const video = document.getElementById('video-operacion');
+    const foto = capturarFoto(video, "RONDÍN: " + qr);
+    
+    const payload = {
+        action: 'RONDIN',
+        user: localStorage.getItem('user_id'),
+        qr: qr,
+        notas: document.getElementById('notes').value,
+        img: foto,
+        lat: coords ? coords.latitude : 0,
+        lon: coords ? coords.longitude : 0
+    };
+
+    await fetch(webAppUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+    
+    mostrarLoader("", false);
+    document.getElementById('qr-res').value = "";
+    document.getElementById('notes').value = "";
+    alert("✅ Registro exitoso");
+  }
+
+  function capturarFoto(video, texto) {
+    const canvas = document.getElementById('canvas-wm');
+    const ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(0, canvas.height-40, canvas.width, 40);
+    ctx.fillStyle = "white";
+    ctx.font = "16px Segoe UI";
+    ctx.fillText(texto + " | " + new Date().toLocaleString(), 15, canvas.height-15);
+    return canvas.toDataURL('image/jpeg', 0.7);
+  }
+
+  function iniciarCamara(id, modo) {
+    if(streamActivo) streamActivo.getTracks().forEach(t => t.stop());
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: modo } }).then(s => {
+        streamActivo = s;
+        document.getElementById(id).srcObject = s;
+    }).catch(e => alert("Error al abrir cámara: " + e));
+  }
+
+  function iniciarQR() {
+    const scanner = new Html5Qrcode("qr-reader");
+    scanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (txt) => {
+        document.getElementById('qr-res').value = txt;
+        if(navigator.vibrate) navigator.vibrate(100);
+    }).catch(err => console.error("Error QR:", err));
+  }
+
+  function irA(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function irACheckOut() {
+    modoActual = 'SALIDA';
+    irA('scr-face');
+    iniciarCamara('video-face', 'user');
+  }
+</script>
+</body>
+</html>
