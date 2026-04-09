@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sentry Pro v14 - Lógica Persistente</title>
+  <title>Sentry Pro v15.5</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;800&display=swap" rel="stylesheet">
@@ -22,8 +22,6 @@
     .badge-off { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.2); }
 
     .premium-card { background: var(--card); border-radius: 20px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 15px; position: relative; }
-    
-    /* Bloqueo Operativo */
     .lock-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.95); border-radius: 20px; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 10; text-align: center; padding: 20px; backdrop-filter: blur(4px); }
     
     .cam-box { width: 100%; border-radius: 15px; overflow: hidden; background: #000; position: relative; border: 1px solid var(--border); }
@@ -37,34 +35,38 @@
     .menu-open { left: 0 !important; }
     .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 999; display: none; }
 
+    #loader { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
 <body>
 
+  <div id="loader">
+    <div class="spinner-border text-primary mb-3"></div>
+    <div id="loader-text" class="small fw-bold">SINCRONIZANDO...</div>
+  </div>
+
   <div class="menu-overlay" id="overlay" onclick="toggleMenu()"></div>
   <div id="side-menu">
-    <h3 class="fw-bold mb-4 text-primary">Sentry Panel</h3>
+    <h3 class="fw-bold mb-4 text-primary">Sentry Admin</h3>
     <p class="small text-muted mb-0">OPERADOR:</p>
     <p id="menu-user" class="fw-bold mb-4 text-white">--</p>
-
     <div class="list-group list-group-flush">
-        <button id="m-btn-entrada" onclick="irABiometria('ENTRADA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3">🕒 Marcar Inicio de Turno</button>
-        <button id="m-btn-salida" onclick="irABiometria('SALIDA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3">🏁 Marcar Fin de Turno</button>
+        <button id="m-btn-entrada" onclick="irABiometria('ENTRADA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3">🕒 Marcar Entrada</button>
+        <button id="m-btn-salida" onclick="irABiometria('SALIDA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3">🏁 Marcar Salida</button>
         <hr class="border-secondary opacity-25">
-        <button onclick="cerrarSesionApp()" class="list-group-item list-group-item-action bg-transparent text-danger border-0 py-3 fw-bold">🚪 Cerrar Sesión (Cambio de equipo)</button>
+        <button onclick="cerrarSesionApp()" class="list-group-item list-group-item-action bg-transparent text-danger border-0 py-3 fw-bold">🚪 Salir</button>
     </div>
   </div>
 
   <div id="scr-login" class="screen">
     <div class="text-center mt-5 mb-5">
         <h1 class="fw-bold">SENTRY <span class="text-primary">PRO</span></h1>
-        <p class="text-muted small">INDUSTRIAL ASSET MANAGEMENT</p>
     </div>
     <div class="premium-card">
       <input type="text" id="user-id" class="form-control mb-3" placeholder="Usuario">
       <input type="password" id="pass" class="form-control mb-4" placeholder="Password">
-      <button onclick="login()" class="btn btn-primary-pro btn-massive">INGRESAR AL PANEL</button>
+      <button onclick="login()" class="btn btn-primary-pro btn-massive">INGRESAR</button>
     </div>
   </div>
 
@@ -73,28 +75,18 @@
         <div onclick="toggleMenu()" style="cursor:pointer; font-size: 1.5rem;">☰</div>
         <div id="jornada-stat" class="stat-badge badge-off">TURNO: --</div>
     </div>
-    
     <div class="px-3 pt-3">
         <div class="premium-card">
             <div id="lock-global" class="lock-overlay">
                 <span style="font-size: 2rem;">🔒</span>
-                <p class="mt-2 fw-bold">JORNADA NO INICIADA</p>
-                <p class="small text-muted px-3">Ve al menú (☰) y marca tu "Inicio de Turno" para trabajar.</p>
+                <p class="mt-2 fw-bold">TURNO CERRADO</p>
             </div>
-            
-            <button onclick="activarQR()" class="btn btn-primary-pro btn-massive mb-3">ESCANEAR PUNTO QR ⚡</button>
-            <div class="cam-box mb-3" id="box-qr" style="display:none;">
-                <div id="qr-reader"></div>
-            </div>
-            
-            <input type="text" id="qr-res" class="form-control text-center fw-bold border-0 bg-transparent text-primary mb-3" placeholder="ESPERANDO LECTURA" readonly>
-
-            <button onclick="activarEvidencia()" class="btn btn-success-pro btn-massive mb-3">FOTO EVIDENCIA 📸</button>
-            <div class="cam-box mb-3" id="box-evidencia" style="display:none;">
-                <video id="video-evidencia" autoplay playsinline></video>
-            </div>
-            
-            <textarea id="notes" class="form-control mb-3" placeholder="Comentarios del punto..."></textarea>
+            <button onclick="activarQR()" class="btn btn-primary-pro btn-massive mb-3">SCAN QR</button>
+            <div class="cam-box mb-3" id="box-qr" style="display:none;"><div id="qr-reader"></div></div>
+            <input type="text" id="qr-res" class="form-control text-center fw-bold border-0 bg-transparent text-primary mb-3" placeholder="---" readonly>
+            <button onclick="activarEvidencia()" class="btn btn-success-pro btn-massive mb-3">FOTO</button>
+            <div class="cam-box mb-3" id="box-evidencia" style="display:none;"><video id="video-evidencia" autoplay playsinline></video></div>
+            <textarea id="notes" class="form-control mb-3" placeholder="Notas..."></textarea>
             <button onclick="enviarRegistro()" class="btn btn-primary-pro btn-massive" style="background:white; color:black;">GUARDAR RONDÍN</button>
         </div>
     </div>
@@ -103,17 +95,22 @@
   <div id="scr-face" class="screen">
     <div class="text-center mb-4"><h5 id="face-title" class="fw-bold">VERIFICACIÓN</h5></div>
     <div class="cam-box mb-4"><video id="video-face" autoplay playsinline></video></div>
-    <button onclick="confirmarBiometria()" class="btn btn-primary-pro btn-massive">CAPTURAR Y MARCAR</button>
-    <button onclick="irA('scr-rondin')" class="btn btn-link w-100 text-muted mt-3">Cancelar</button>
+    <button onclick="confirmarBiometria()" class="btn btn-primary-pro btn-massive">CONFIRMAR</button>
   </div>
 
+  <canvas id="canvas-wm" style="display:none;"></canvas>
+
 <script>
+  // URL DE TU SCRIPT (Asegúrate de que sea la última versión implementada)
+  const webAppUrl = "https://script.google.com/macros/s/AKfycbxXAvfizReXhw6GRS3MVM3NNqjelXyeMFbbNx8msyf6e8OULXtkYxpZK1Wp2hmmcCJA/exec"; 
+
   let streamActivo = null;
   let scanner = null;
-  let tipoAccion = '';
+  let tipoAccion = ''; // ENTRADA o SALIDA
+  let coords = { latitude: 0, longitude: 0 };
 
   window.onload = () => {
-    // 1. REVISAR SI HAY SESIÓN DE USUARIO
+    navigator.geolocation.getCurrentPosition(p => coords = p.coords);
     const user = localStorage.getItem('user_id');
     if (user) {
         document.getElementById('menu-user').innerText = user;
@@ -124,77 +121,111 @@
     }
   };
 
+  async function login() {
+    const user = document.getElementById('user-id').value;
+    const pass = document.getElementById('pass').value;
+    if(!user || !pass) return alert("Completa los datos");
+
+    document.getElementById('loader').style.display = 'flex';
+    try {
+        const resp = await fetch(`${webAppUrl}?user=${user}&pass=${pass}`);
+        const txt = await resp.text();
+        if(txt === "VALIDO") {
+            localStorage.setItem('user_id', user);
+            location.reload();
+        } else {
+            alert("Usuario o clave incorrecta");
+        }
+    } catch(e) { alert("Error de conexión"); }
+    document.getElementById('loader').style.display = 'none';
+  }
+
+  // --- COMPATIBILIDAD CON TU DO-POST ---
+  async function apiPost(datos) {
+    document.getElementById('loader').style.display = 'flex';
+    try {
+        await fetch(webAppUrl, {
+            method: "POST",
+            mode: "no-cors",
+            body: JSON.stringify(datos)
+        });
+        return true;
+    } catch (e) { return false; }
+    finally { document.getElementById('loader').style.display = 'none'; }
+  }
+
+  async function confirmarBiometria() {
+    const user = localStorage.getItem('user_id');
+    const foto = capturarFoto(document.getElementById('video-face'));
+
+    const ok = await apiPost({
+        action: "ASISTENCIA", // Como lo espera tu script
+        user: user,
+        tipo: tipoAccion,
+        img: foto, // Tu script usa 'img'
+        lat: coords.latitude,
+        lon: coords.longitude // Tu script usa 'lon'
+    });
+
+    localStorage.setItem('jornada_activa', (tipoAccion === 'ENTRADA' ? 'true' : 'false'));
+    apagarCamaras();
+    actualizarInterfazTurno();
+    irA('scr-rondin');
+    alert("Registro enviado");
+  }
+
+  async function enviarRegistro() {
+    const qr = document.getElementById('qr-res').value;
+    const user = localStorage.getItem('user_id');
+    if(!qr || qr === "---") return alert("Escanea un QR");
+
+    const foto = capturarFoto(document.getElementById('video-evidencia'));
+
+    const ok = await apiPost({
+        action: "RONDIN", // Como lo espera tu script
+        user: user,
+        qr: qr,
+        notas: document.getElementById('notes').value,
+        img: foto,
+        lat: coords.latitude,
+        lon: coords.longitude
+    });
+
+    alert("✅ Enviado a Excel y Drive");
+    document.getElementById('qr-res').value = "";
+    document.getElementById('notes').value = "";
+    apagarCamaras();
+  }
+
+  function capturarFoto(video) {
+    const c = document.getElementById('canvas-wm');
+    const ctx = c.getContext('2d');
+    c.width = 480; c.height = 640; // Tamaño optimizado
+    ctx.drawImage(video, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.5);
+  }
+
+  // --- NAVEGACIÓN ---
   function actualizarInterfazTurno() {
-    // REVISAR SI EL TURNO ESTÁ ACTIVO (Esto no se borra al cerrar sesión)
-    const jornadaIniciada = localStorage.getItem('jornada_activa') === 'true';
-    const badge = document.getElementById('jornada-stat');
-    const lock = document.getElementById('lock-global');
-    
-    if (jornadaIniciada) {
-        badge.innerText = "TURNO: ACTIVO";
-        badge.className = "stat-badge badge-on";
-        lock.style.display = 'none';
-        // Ajustar botones del menú
-        document.getElementById('m-btn-entrada').style.display = 'none';
-        document.getElementById('m-btn-salida').style.display = 'block';
-    } else {
-        badge.innerText = "TURNO: CERRADO";
-        badge.className = "stat-badge badge-off";
-        lock.style.display = 'flex';
-        // Ajustar botones del menú
-        document.getElementById('m-btn-entrada').style.display = 'block';
-        document.getElementById('m-btn-salida').style.display = 'none';
-    }
-  }
-
-  function login() {
-    const u = document.getElementById('user-id').value;
-    if(u) {
-        localStorage.setItem('user_id', u);
-        location.reload(); 
-    }
-  }
-
-  function cerrarSesionApp() {
-    // SOLO BORRAMOS EL USUARIO, NO EL ESTADO DEL TURNO
-    localStorage.removeItem('user_id');
-    location.reload();
-  }
-
-  function toggleMenu() {
-    const m = document.getElementById('side-menu');
-    m.classList.toggle('menu-open');
-    document.getElementById('overlay').style.display = m.classList.contains('menu-open') ? 'block' : 'none';
+    const activa = localStorage.getItem('jornada_activa') === 'true';
+    document.getElementById('lock-global').style.display = activa ? 'none' : 'flex';
+    document.getElementById('jornada-stat').innerText = activa ? "TURNO: ACTIVO" : "TURNO: CERRADO";
+    document.getElementById('jornada-stat').className = "stat-badge " + (activa ? "badge-on" : "badge-off");
   }
 
   function irABiometria(tipo) {
     tipoAccion = tipo;
     toggleMenu();
-    document.getElementById('face-title').innerText = "REGISTRO DE " + tipo;
     irA('scr-face');
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }).then(s => {
         streamActivo = s; document.getElementById('video-face').srcObject = s;
     });
   }
 
-  function confirmarBiometria() {
-    if (tipoAccion === 'ENTRADA') {
-        localStorage.setItem('jornada_activa', 'true');
-    } else {
-        localStorage.setItem('jornada_activa', 'false');
-    }
-    
-    if(streamActivo) streamActivo.getTracks().forEach(t => t.stop());
-    alert("Marcación de " + tipoAccion + " exitosa.");
-    actualizarInterfazTurno();
-    irA('scr-rondin');
-  }
-
-  // OPERATIVA RONDIN
   async function activarQR() {
     document.getElementById('box-qr').style.display = 'block';
     scanner = new Html5Qrcode("qr-reader");
-    scanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, async (txt) => {
+    scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (txt) => {
         document.getElementById('qr-res').value = txt;
         await scanner.stop();
         document.getElementById('box-qr').style.display = 'none';
@@ -208,18 +239,14 @@
     });
   }
 
-  function enviarRegistro() {
-    alert("✅ Rondín Guardado");
-    document.getElementById('qr-res').value = "";
-    document.getElementById('notes').value = "";
+  function apagarCamaras() {
     if(streamActivo) streamActivo.getTracks().forEach(t => t.stop());
     document.getElementById('box-evidencia').style.display = 'none';
   }
 
-  function irA(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-  }
+  function cerrarSesionApp() { localStorage.removeItem('user_id'); location.reload(); }
+  function toggleMenu() { document.getElementById('side-menu').classList.toggle('menu-open'); document.getElementById('overlay').style.display = document.getElementById('side-menu').classList.contains('menu-open') ? 'block' : 'none'; }
+  function irA(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 </script>
 </body>
 </html>
