@@ -3,272 +3,222 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sentry Pro v8.6 - Fixed Camera</title>
-  <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+  <title>Sentry Pro v14 - Lógica Persistente</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;800&display=swap" rel="stylesheet">
   <style>
-    :root { --primary: #3b82f6; --bg: #0f172a; --warning: #f59e0b; }
-    body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-    .screen { display: none; padding: 25px; height: 100vh; overflow-y: auto; }
-    .active { display: block; animation: fadeIn 0.5s ease-in-out; }
-    #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
-    .spinner { width: 50px; height: 50px; border: 5px solid #1e293b; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+    :root { 
+      --primary: #3b82f6; --bg: #020617; --card: #0f172a; --text: #f1f5f9;
+      --success: #10b981; --danger: #ef4444; --border: rgba(255, 255, 255, 0.08);
+    }
+    body { background: radial-gradient(circle at 50% -20%, #1e293b, #020617); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; min-height: 100vh; }
+    .screen { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
+    .active { display: block; }
     
-    .cam-box { width: 100%; border-radius: 20px; overflow: hidden; border: 2px solid var(--primary); background: #000; box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); display: none; }
-    video { width: 100%; display: block; }
-    #qr-reader { display: none; width: 100%; border-radius: 20px; overflow: hidden; border: 2px solid var(--primary); margin-bottom: 15px; }
+    .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .stat-badge { font-size: 10px; padding: 4px 10px; border-radius: 50px; font-weight: 800; border: 1px solid; }
+    .badge-on { background: rgba(16, 185, 129, 0.1); color: var(--success); border-color: rgba(16, 185, 129, 0.2); }
+    .badge-off { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.2); }
 
-    .btn-massive { height: 65px; font-weight: bold; border-radius: 18px; text-transform: uppercase; transition: 0.3s; margin-bottom: 15px; }
-    .btn-warning-custom { background-color: var(--warning); color: black; border: none; }
+    .premium-card { background: var(--card); border-radius: 20px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 15px; position: relative; }
     
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    /* Bloqueo Operativo */
+    .lock-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.95); border-radius: 20px; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 10; text-align: center; padding: 20px; backdrop-filter: blur(4px); }
+    
+    .cam-box { width: 100%; border-radius: 15px; overflow: hidden; background: #000; position: relative; border: 1px solid var(--border); }
+    video { width: 100%; display: block; }
+    
+    .btn-massive { height: 55px; border-radius: 14px; font-weight: 800; text-transform: uppercase; border: none; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn-primary-pro { background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; }
+    .btn-success-pro { background: linear-gradient(135deg, #059669, #10b981); color: white; }
+    
+    #side-menu { position: fixed; top: 0; left: -100%; width: 85%; height: 100%; background: var(--card); z-index: 1000; transition: 0.4s; padding: 30px 20px; border-right: 1px solid var(--border); }
+    .menu-open { left: 0 !important; }
+    .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 999; display: none; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
 <body>
 
-  <div id="loader">
-    <div class="spinner mb-3"></div>
-    <div id="loader-text" class="small text-primary fw-bold">PROCESANDO...</div>
+  <div class="menu-overlay" id="overlay" onclick="toggleMenu()"></div>
+  <div id="side-menu">
+    <h3 class="fw-bold mb-4 text-primary">Sentry Panel</h3>
+    <p class="small text-muted mb-0">OPERADOR:</p>
+    <p id="menu-user" class="fw-bold mb-4 text-white">--</p>
+
+    <div class="list-group list-group-flush">
+        <button id="m-btn-entrada" onclick="irABiometria('ENTRADA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3">🕒 Marcar Inicio de Turno</button>
+        <button id="m-btn-salida" onclick="irABiometria('SALIDA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3">🏁 Marcar Fin de Turno</button>
+        <hr class="border-secondary opacity-25">
+        <button onclick="cerrarSesionApp()" class="list-group-item list-group-item-action bg-transparent text-danger border-0 py-3 fw-bold">🚪 Cerrar Sesión (Cambio de equipo)</button>
+    </div>
   </div>
 
   <div id="scr-login" class="screen">
     <div class="text-center mt-5 mb-5">
-        <h1 class="fw-bold text-primary">SENTRY PRO</h1>
-        <p class="text-muted">Acceso Restringido</p>
+        <h1 class="fw-bold">SENTRY <span class="text-primary">PRO</span></h1>
+        <p class="text-muted small">INDUSTRIAL ASSET MANAGEMENT</p>
     </div>
-    <div class="card bg-dark border-secondary p-4 shadow-lg">
-      <input type="text" id="user-id" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="ID de Guardia">
-      <input type="password" id="pass" class="form-control mb-4 bg-dark text-white border-secondary" placeholder="Contraseña">
-      <button onclick="iniciarFlujo()" class="btn btn-primary w-100 btn-massive">INGRESAR AL SISTEMA</button>
+    <div class="premium-card">
+      <input type="text" id="user-id" class="form-control mb-3" placeholder="Usuario">
+      <input type="password" id="pass" class="form-control mb-4" placeholder="Password">
+      <button onclick="login()" class="btn btn-primary-pro btn-massive">INGRESAR AL PANEL</button>
+    </div>
+  </div>
+
+  <div id="scr-rondin" class="screen" style="padding:0;">
+    <div class="top-nav">
+        <div onclick="toggleMenu()" style="cursor:pointer; font-size: 1.5rem;">☰</div>
+        <div id="jornada-stat" class="stat-badge badge-off">TURNO: --</div>
+    </div>
+    
+    <div class="px-3 pt-3">
+        <div class="premium-card">
+            <div id="lock-global" class="lock-overlay">
+                <span style="font-size: 2rem;">🔒</span>
+                <p class="mt-2 fw-bold">JORNADA NO INICIADA</p>
+                <p class="small text-muted px-3">Ve al menú (☰) y marca tu "Inicio de Turno" para trabajar.</p>
+            </div>
+            
+            <button onclick="activarQR()" class="btn btn-primary-pro btn-massive mb-3">ESCANEAR PUNTO QR ⚡</button>
+            <div class="cam-box mb-3" id="box-qr" style="display:none;">
+                <div id="qr-reader"></div>
+            </div>
+            
+            <input type="text" id="qr-res" class="form-control text-center fw-bold border-0 bg-transparent text-primary mb-3" placeholder="ESPERANDO LECTURA" readonly>
+
+            <button onclick="activarEvidencia()" class="btn btn-success-pro btn-massive mb-3">FOTO EVIDENCIA 📸</button>
+            <div class="cam-box mb-3" id="box-evidencia" style="display:none;">
+                <video id="video-evidencia" autoplay playsinline></video>
+            </div>
+            
+            <textarea id="notes" class="form-control mb-3" placeholder="Comentarios del punto..."></textarea>
+            <button onclick="enviarRegistro()" class="btn btn-primary-pro btn-massive" style="background:white; color:black;">GUARDAR RONDÍN</button>
+        </div>
     </div>
   </div>
 
   <div id="scr-face" class="screen">
-    <h4 class="text-center mb-4" id="face-title">VERIFICACIÓN BIOMÉTRICA</h4>
-    <div class="cam-box mb-4" style="display:block;"><video id="video-face" autoplay playsinline></video></div>
-    <button onclick="confirmarAsistencia()" class="btn btn-success w-100 btn-massive shadow">CONFIRMAR IDENTIDAD</button>
-    <button onclick="location.reload()" class="btn btn-outline-light w-100">CANCELAR / VOLVER</button>
+    <div class="text-center mb-4"><h5 id="face-title" class="fw-bold">VERIFICACIÓN</h5></div>
+    <div class="cam-box mb-4"><video id="video-face" autoplay playsinline></video></div>
+    <button onclick="confirmarBiometria()" class="btn btn-primary-pro btn-massive">CAPTURAR Y MARCAR</button>
+    <button onclick="irA('scr-rondin')" class="btn btn-link w-100 text-muted mt-3">Cancelar</button>
   </div>
-
-  <div id="scr-rondin" class="screen">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div class="badge bg-primary px-3 py-2" id="user-display">ID: --</div>
-        <button onclick="cerrarSesionApp()" class="btn btn-outline-danger btn-sm fw-bold">CERRAR APP</button>
-    </div>
-
-    <button id="btn-qr" onclick="activarLectorQR()" class="btn btn-outline-info w-100 mb-3 fw-bold">1. ESCANEAR PUNTO QR</button>
-    <div id="qr-reader"></div>
-    <input type="text" id="qr-res" class="form-control mb-4 bg-black text-info text-center fw-bold border-0" placeholder="ESPERANDO QR..." readonly>
-
-    <button id="btn-foto" onclick="activarCamaraOperacion()" class="btn btn-outline-success w-100 mb-3 fw-bold">2. ACTIVAR CÁMARA EVIDENCIA</button>
-    <div class="cam-box mb-3" id="box-operacion"><video id="video-operacion" autoplay playsinline></video></div>
-
-    <textarea id="notes" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="Notas de inspección..."></textarea>
-    
-    <button onclick="enviarEvidencia()" class="btn btn-primary w-100 btn-massive shadow">GUARDAR REGISTRO</button>
-
-    <hr class="border-secondary mt-5">
-    <button onclick="irACheckOut()" class="btn btn-warning-custom w-100 btn-massive shadow">REGISTRAR SALIDA FIN DE TURNO</button>
-  </div>
-
-  <canvas id="canvas-wm" style="display:none;"></canvas>
 
 <script>
   let streamActivo = null;
-  let modoActual = 'ENTRADA';
-  let coords = null;
-  let html5QrScanner = null;
-
-  const webAppUrl = "https://script.google.com/macros/s/AKfycbxzT7tfCW3PYtGKL6lJaCRdI2iw0ONBiPSQK9GQBBl_-5WGDu4CxBCRmIMQOUbpUugoSg/exec"; 
+  let scanner = null;
+  let tipoAccion = '';
 
   window.onload = () => {
-    navigator.geolocation.watchPosition(p => coords = p.coords);
-    if (localStorage.getItem('jornada_activa') === 'true') {
-        document.getElementById('user-display').innerText = "ID: " + localStorage.getItem('user_id');
-        irA('scr-rondin');
-    } else { irA('scr-login'); }
-  };
-
-  function mostrarLoader(texto, visible) {
-    const loader = document.getElementById('loader');
-    document.getElementById('loader-text').innerText = texto;
-    loader.style.display = visible ? 'flex' : 'none';
-  }
-
-  // --- SOLUCIÓN AL CONFLICTO DE CÁMARAS ---
-
-  async function apagarTodo() {
-    // 1. Apagar Stream de video (Cámara de fotos)
-    if (streamActivo) {
-        streamActivo.getTracks().forEach(track => track.stop());
-        streamActivo = null;
-    }
-    // 2. Apagar Escáner QR
-    if (html5QrScanner) {
-        try {
-            await html5QrScanner.stop();
-            html5QrScanner = null;
-        } catch (e) { console.log("Escáner ya estaba apagado"); }
-    }
-    // 3. Ocultar contenedores
-    document.getElementById('qr-reader').style.display = 'none';
-    document.getElementById('box-operacion').style.display = 'none';
-  }
-
-  async function activarLectorQR() {
-    await apagarTodo();
-    
-    const readerDiv = document.getElementById('qr-reader');
-    readerDiv.style.display = 'block';
-    
-    html5QrScanner = new Html5Qrcode("qr-reader");
-    html5QrScanner.start(
-        { facingMode: "environment" }, 
-        { fps: 15, qrbox: 250 }, 
-        async (txt) => {
-            document.getElementById('qr-res').value = txt;
-            if(navigator.vibrate) navigator.vibrate(100);
-            
-            // Apagar inmediatamente al detectar
-            await apagarTodo();
-            alert("✅ QR Registrado: " + txt);
-        }
-    ).catch(err => alert("Error al activar QR. Cierra otras apps que usen cámara."));
-  }
-
-  async function activarCamaraOperacion() {
-    await apagarTodo();
-    
-    // Esperar 500ms para que el hardware de la cámara se libere
-    setTimeout(() => {
-        document.getElementById('box-operacion').style.display = 'block';
-        iniciarCamara('video-operacion', 'environment');
-    }, 500);
-  }
-
-  // --- RESTO DE FUNCIONES ---
-
-  async function iniciarFlujo() {
-    const user = document.getElementById('user-id').value;
-    const pass = document.getElementById('pass').value;
-    if(!user || !pass) return alert("Ingresa ID y Contraseña.");
-    mostrarLoader("VALIDANDO...", true);
-
-    try {
-        const respuesta = await fetch(`${webAppUrl}?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`);
-        const resultado = await respuesta.text();
-        mostrarLoader("", false);
-        if (resultado.trim() === "VALIDO") {
-            localStorage.setItem('user_id', user);
-            document.getElementById('user-display').innerText = "ID: " + user;
-            modoActual = 'ENTRADA';
-            irA('scr-face');
-            iniciarCamara('video-face', 'user');
-        } else {
-            alert("❌ Credenciales Incorrectas.");
-        }
-    } catch (e) {
-        mostrarLoader("", false);
-        alert("Error de conexión.");
-    }
-  }
-
-  async function confirmarAsistencia() {
-    mostrarLoader("ENVIANDO...", true);
-    const video = document.getElementById('video-face');
-    const foto = capturarFoto(video, "ASISTENCIA " + modoActual);
-    
-    const payload = {
-        action: 'ASISTENCIA',
-        tipo: modoActual,
-        user: localStorage.getItem('user_id'),
-        img: foto,
-        lat: coords ? coords.latitude : 0,
-        lon: coords ? coords.longitude : 0
-    };
-
-    await fetch(webAppUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-    
-    mostrarLoader("", false);
-    if(modoActual === 'ENTRADA') {
-        localStorage.setItem('jornada_activa', 'true');
+    // 1. REVISAR SI HAY SESIÓN DE USUARIO
+    const user = localStorage.getItem('user_id');
+    if (user) {
+        document.getElementById('menu-user').innerText = user;
+        actualizarInterfazTurno();
         irA('scr-rondin');
     } else {
-        localStorage.clear();
-        alert("¡Salida Registrada!");
-        location.reload();
+        irA('scr-login');
+    }
+  };
+
+  function actualizarInterfazTurno() {
+    // REVISAR SI EL TURNO ESTÁ ACTIVO (Esto no se borra al cerrar sesión)
+    const jornadaIniciada = localStorage.getItem('jornada_activa') === 'true';
+    const badge = document.getElementById('jornada-stat');
+    const lock = document.getElementById('lock-global');
+    
+    if (jornadaIniciada) {
+        badge.innerText = "TURNO: ACTIVO";
+        badge.className = "stat-badge badge-on";
+        lock.style.display = 'none';
+        // Ajustar botones del menú
+        document.getElementById('m-btn-entrada').style.display = 'none';
+        document.getElementById('m-btn-salida').style.display = 'block';
+    } else {
+        badge.innerText = "TURNO: CERRADO";
+        badge.className = "stat-badge badge-off";
+        lock.style.display = 'flex';
+        // Ajustar botones del menú
+        document.getElementById('m-btn-entrada').style.display = 'block';
+        document.getElementById('m-btn-salida').style.display = 'none';
     }
   }
 
-  async function enviarEvidencia() {
-    const qr = document.getElementById('qr-res').value;
-    const box = document.getElementById('box-operacion');
-    
-    if(!qr || qr === "ESPERANDO QR...") return alert("Primero escanea el QR");
-    if(box.style.display === 'none') return alert("Activa la cámara y captura la evidencia");
+  function login() {
+    const u = document.getElementById('user-id').value;
+    if(u) {
+        localStorage.setItem('user_id', u);
+        location.reload(); 
+    }
+  }
 
-    mostrarLoader("GUARDANDO...", true);
-    const video = document.getElementById('video-operacion');
-    const foto = capturarFoto(video, "RONDÍN: " + qr);
-    
-    const payload = {
-        action: 'RONDIN',
-        user: localStorage.getItem('user_id'),
-        qr: qr,
-        notas: document.getElementById('notes').value,
-        img: foto,
-        lat: coords ? coords.latitude : 0,
-        lon: coords ? coords.longitude : 0
-    };
+  function cerrarSesionApp() {
+    // SOLO BORRAMOS EL USUARIO, NO EL ESTADO DEL TURNO
+    localStorage.removeItem('user_id');
+    location.reload();
+  }
 
-    await fetch(webAppUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+  function toggleMenu() {
+    const m = document.getElementById('side-menu');
+    m.classList.toggle('menu-open');
+    document.getElementById('overlay').style.display = m.classList.contains('menu-open') ? 'block' : 'none';
+  }
+
+  function irABiometria(tipo) {
+    tipoAccion = tipo;
+    toggleMenu();
+    document.getElementById('face-title').innerText = "REGISTRO DE " + tipo;
+    irA('scr-face');
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }).then(s => {
+        streamActivo = s; document.getElementById('video-face').srcObject = s;
+    });
+  }
+
+  function confirmarBiometria() {
+    if (tipoAccion === 'ENTRADA') {
+        localStorage.setItem('jornada_activa', 'true');
+    } else {
+        localStorage.setItem('jornada_activa', 'false');
+    }
     
-    mostrarLoader("", false);
+    if(streamActivo) streamActivo.getTracks().forEach(t => t.stop());
+    alert("Marcación de " + tipoAccion + " exitosa.");
+    actualizarInterfazTurno();
+    irA('scr-rondin');
+  }
+
+  // OPERATIVA RONDIN
+  async function activarQR() {
+    document.getElementById('box-qr').style.display = 'block';
+    scanner = new Html5Qrcode("qr-reader");
+    scanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, async (txt) => {
+        document.getElementById('qr-res').value = txt;
+        await scanner.stop();
+        document.getElementById('box-qr').style.display = 'none';
+    });
+  }
+
+  function activarEvidencia() {
+    document.getElementById('box-evidencia').style.display = 'block';
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(s => {
+        streamActivo = s; document.getElementById('video-evidencia').srcObject = s;
+    });
+  }
+
+  function enviarRegistro() {
+    alert("✅ Rondín Guardado");
     document.getElementById('qr-res').value = "";
     document.getElementById('notes').value = "";
-    apagarTodo();
-    alert("✅ Registro Guardado");
-  }
-
-  function capturarFoto(video, texto) {
-    const canvas = document.getElementById('canvas-wm');
-    const ctx = canvas.getContext('2d');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(0, canvas.height-40, canvas.width, 40);
-    ctx.fillStyle = "white";
-    ctx.font = "16px Segoe UI";
-    ctx.fillText(texto + " | " + new Date().toLocaleString(), 15, canvas.height-15);
-    return canvas.toDataURL('image/jpeg', 0.7);
-  }
-
-  function iniciarCamara(id, modo) {
     if(streamActivo) streamActivo.getTracks().forEach(t => t.stop());
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: modo } }).then(s => {
-        streamActivo = s;
-        document.getElementById(id).srcObject = s;
-    }).catch(e => alert("Error: Cámara ocupada. Refresca la página."));
+    document.getElementById('box-evidencia').style.display = 'none';
   }
 
   function irA(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-  }
-
-  function irACheckOut() {
-    if(confirm("¿Finalizar turno?")) {
-        modoActual = 'SALIDA';
-        irA('scr-face');
-        iniciarCamara('video-face', 'user');
-    }
-  }
-
-  function cerrarSesionApp() {
-    if(confirm("¿Cerrar App?")) location.reload();
   }
 </script>
 </body>
