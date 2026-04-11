@@ -3,250 +3,370 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sentry Pro v15.5</title>
+  <title>Sentry Pro v16.7 - Industrial Build</title>
+  
   <script src="https://unpkg.com/html5-qrcode"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;800&display=swap" rel="stylesheet">
+
   <style>
     :root { 
       --primary: #3b82f6; --bg: #020617; --card: #0f172a; --text: #f1f5f9;
-      --success: #10b981; --danger: #ef4444; --border: rgba(255, 255, 255, 0.08);
+      --success: #10b981; --danger: #ef4444; --border: rgba(255, 255, 255, 0.1);
     }
-    body { background: radial-gradient(circle at 50% -20%, #1e293b, #020617); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; min-height: 100vh; }
-    .screen { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
-    .active { display: block; }
-    
-    .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
-    .stat-badge { font-size: 10px; padding: 4px 10px; border-radius: 50px; font-weight: 800; border: 1px solid; }
-    .badge-on { background: rgba(16, 185, 129, 0.1); color: var(--success); border-color: rgba(16, 185, 129, 0.2); }
-    .badge-off { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.2); }
 
-    .premium-card { background: var(--card); border-radius: 20px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 15px; position: relative; }
-    .lock-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.95); border-radius: 20px; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 10; text-align: center; padding: 20px; backdrop-filter: blur(4px); }
-    
-    .cam-box { width: 100%; border-radius: 15px; overflow: hidden; background: #000; position: relative; border: 1px solid var(--border); }
-    video { width: 100%; display: block; }
-    
-    .btn-massive { height: 55px; border-radius: 14px; font-weight: 800; text-transform: uppercase; border: none; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
-    .btn-primary-pro { background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; }
-    .btn-success-pro { background: linear-gradient(135deg, #059669, #10b981); color: white; }
-    
-    #side-menu { position: fixed; top: 0; left: -100%; width: 85%; height: 100%; background: var(--card); z-index: 1000; transition: 0.4s; padding: 30px 20px; border-right: 1px solid var(--border); }
+    /* Forzar visibilidad base para evitar pantalla negra */
+    html, body { 
+      background-color: #020617 !important; 
+      color: #f1f5f9; 
+      margin: 0; padding: 0;
+      min-height: 100vh;
+      font-family: sans-serif;
+    }
+
+    .screen { display: none; padding: 15px; }
+    .active { display: block !important; }
+
+    /* Contenedores Pro */
+    .premium-card { 
+      background: #0f172a; 
+      border-radius: 16px; 
+      padding: 20px; 
+      border: 1px solid var(--border);
+      margin-bottom: 15px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    .top-nav { 
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 12px 20px; background: #0f172a; 
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-badge { font-size: 11px; padding: 4px 12px; border-radius: 50px; font-weight: bold; border: 1px solid; }
+    .badge-on { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: #10b981; }
+    .badge-off { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: #ef4444; }
+
+    /* Cámaras */
+    .cam-box { 
+      width: 100%; border-radius: 12px; overflow: hidden; 
+      background: #000; border: 1px solid var(--border); 
+      position: relative; min-height: 240px;
+    }
+    video, img#preview-img { width: 100%; height: auto; display: block; object-fit: cover; }
+
+    /* Botones Masivos */
+    .btn-massive { 
+      height: 58px; border-radius: 12px; font-weight: bold; 
+      text-transform: uppercase; border: none; width: 100%; 
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .btn-primary-pro { background: #2563eb; color: white; }
+    .btn-success-pro { background: #059669; color: white; }
+
+    /* Menú */
+    #side-menu { 
+      position: fixed; top: 0; left: -100%; width: 80%; height: 100%; 
+      background: #0f172a; z-index: 1001; transition: 0.3s; 
+      padding: 25px; border-right: 1px solid var(--border); 
+    }
     .menu-open { left: 0 !important; }
-    .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 999; display: none; }
+    .menu-overlay { 
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); 
+      z-index: 1000; display: none; 
+    }
 
-    #loader { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    #loader { 
+      position: fixed; inset: 0; background: rgba(2, 6, 23, 0.9); 
+      display: none; flex-direction: column; justify-content: center; 
+      align-items: center; z-index: 9999; 
+    }
   </style>
 </head>
 <body>
 
   <div id="loader">
     <div class="spinner-border text-primary mb-3"></div>
-    <div id="loader-text" class="small fw-bold">SINCRONIZANDO...</div>
+    <div id="loader-text" class="fw-bold">PROCESANDO...</div>
   </div>
 
   <div class="menu-overlay" id="overlay" onclick="toggleMenu()"></div>
+  
   <div id="side-menu">
-    <h3 class="fw-bold mb-4 text-primary">Sentry Admin</h3>
-    <p class="small text-muted mb-0">OPERADOR:</p>
-    <p id="menu-user" class="fw-bold mb-4 text-white">--</p>
+    <h3 class="fw-bold mb-2">SENTRY <span style="color:var(--primary)">PRO</span></h3>
+    <p id="menu-user" class="small text-muted mb-4">--</p>
     <div class="list-group list-group-flush">
-        <button id="m-btn-entrada" onclick="irABiometria('ENTRADA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3">🕒 Marcar Entrada</button>
-        <button id="m-btn-salida" onclick="irABiometria('SALIDA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3">🏁 Marcar Salida</button>
-        <hr class="border-secondary opacity-25">
-        <button onclick="cerrarSesionApp()" class="list-group-item list-group-item-action bg-transparent text-danger border-0 py-3 fw-bold">🚪 Salir</button>
+        <button id="btn-menu-entrada" onclick="irABiometria('ENTRADA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3">🕒 Iniciar Turno</button>
+        <button id="btn-menu-salida" onclick="irABiometria('SALIDA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3">🏁 Finalizar Turno</button>
+        <button onclick="cerrarSesionApp()" class="list-group-item list-group-item-action bg-transparent text-danger border-0 py-3 mt-4">Cerrar Sesión</button>
     </div>
   </div>
 
   <div id="scr-login" class="screen">
     <div class="text-center mt-5 mb-5">
-        <h1 class="fw-bold">SENTRY <span class="text-primary">PRO</span></h1>
+        <h2 class="fw-bold">SENTRY <span style="color:var(--primary)">PRO</span></h2>
+        <p class="text-muted">Acceso Industrial Autorizado</p>
     </div>
     <div class="premium-card">
-      <input type="text" id="user-id" class="form-control mb-3" placeholder="Usuario">
-      <input type="password" id="pass" class="form-control mb-4" placeholder="Password">
-      <button onclick="login()" class="btn btn-primary-pro btn-massive">INGRESAR</button>
+      <input type="text" id="user-id" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="ID Operador">
+      <input type="password" id="pass" class="form-control mb-4 bg-dark text-white border-secondary" placeholder="Contraseña">
+      <button onclick="login()" class="btn btn-primary-pro btn-massive">ENTRAR</button>
     </div>
   </div>
 
   <div id="scr-rondin" class="screen" style="padding:0;">
     <div class="top-nav">
-        <div onclick="toggleMenu()" style="cursor:pointer; font-size: 1.5rem;">☰</div>
-        <div id="jornada-stat" class="stat-badge badge-off">TURNO: --</div>
+        <div onclick="toggleMenu()" style="cursor:pointer; font-size: 24px;">☰</div>
+        <div id="jornada-stat" class="stat-badge badge-off">TURNO OFF</div>
     </div>
+    
     <div class="px-3 pt-3">
         <div class="premium-card">
-            <div id="lock-global" class="lock-overlay">
-                <span style="font-size: 2rem;">🔒</span>
-                <p class="mt-2 fw-bold">TURNO CERRADO</p>
+            <div id="lock-global" style="display:none; text-align:center; padding: 20px;">
+                <h4 class="fw-bold text-danger">TURNO CERRADO</h4>
+                <p class="small">Inicia turno en el menú lateral para operar.</p>
             </div>
-            <button onclick="activarQR()" class="btn btn-primary-pro btn-massive mb-3">SCAN QR</button>
-            <div class="cam-box mb-3" id="box-qr" style="display:none;"><div id="qr-reader"></div></div>
-            <input type="text" id="qr-res" class="form-control text-center fw-bold border-0 bg-transparent text-primary mb-3" placeholder="---" readonly>
-            <button onclick="activarEvidencia()" class="btn btn-success-pro btn-massive mb-3">FOTO</button>
-            <div class="cam-box mb-3" id="box-evidencia" style="display:none;"><video id="video-evidencia" autoplay playsinline></video></div>
-            <textarea id="notes" class="form-control mb-3" placeholder="Notas..."></textarea>
-            <button onclick="enviarRegistro()" class="btn btn-primary-pro btn-massive" style="background:white; color:black;">GUARDAR RONDÍN</button>
+
+            <div id="controls-rondin">
+                <button id="btn-qr-main" onclick="toggleQR()" class="btn btn-primary-pro btn-massive mb-3">1. SCAN QR ⚡</button>
+                <div class="cam-box mb-3" id="box-qr" style="display:none;">
+                    <div id="qr-reader" style="width:100%"></div>
+                </div>
+                <input type="text" id="qr-res" class="form-control text-center fw-bold border-0 bg-transparent text-primary mb-3" value="PUNTO NO LEÍDO" readonly>
+
+                <button id="btn-foto-trigger" onclick="toggleEvidencia()" class="btn btn-success-pro btn-massive mb-3">2. TOMAR FOTO 📸</button>
+                <div class="cam-box mb-3" id="box-evidencia" style="display:none;">
+                    <video id="video-evidencia" autoplay playsinline></video>
+                    <img id="preview-img" style="display:none;">
+                    <button id="btn-snap" onclick="capturarYCongelar()" class="btn btn-danger w-100 py-3 fw-bold position-absolute bottom-0">CAPTURAR EVIDENCIA</button>
+                </div>
+
+                <textarea id="notes" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Observaciones..."></textarea>
+                
+                <button onclick="enviarRegistroRondin()" class="btn btn-massive" style="background:white; color:black;">GUARDAR REGISTRO</button>
+            </div>
         </div>
     </div>
   </div>
 
   <div id="scr-face" class="screen">
-    <div class="text-center mb-4"><h5 id="face-title" class="fw-bold">VERIFICACIÓN</h5></div>
+    <div class="text-center mb-4"><h5 class="fw-bold" id="face-title">VERIFICACIÓN</h5></div>
     <div class="cam-box mb-4"><video id="video-face" autoplay playsinline></video></div>
-    <button onclick="confirmarBiometria()" class="btn btn-primary-pro btn-massive">CONFIRMAR</button>
+    <button onclick="confirmarBiometria()" class="btn btn-primary-pro btn-massive">CONFIRMAR IDENTIDAD</button>
+    <button onclick="location.reload()" class="btn btn-link w-100 text-muted mt-2">Cancelar</button>
   </div>
 
   <canvas id="canvas-wm" style="display:none;"></canvas>
 
 <script>
-  // URL DE TU SCRIPT (Asegúrate de que sea la última versión implementada)
-  const webAppUrl = "https://script.google.com/macros/s/AKfycbxXAvfizReXhw6GRS3MVM3NNqjelXyeMFbbNx8msyf6e8OULXtkYxpZK1Wp2hmmcCJA/exec"; 
+  // URL de tu Google App Script
+  const webAppUrl = "https://script.google.com/macros/s/AKfycbz8qrLP1pl2cgL4IpdNdwfed2evp5xr9hSK2PIzXxcYOQBIi82HYCzL8ctKvlZtagFb/exec";
 
   let streamActivo = null;
   let scanner = null;
-  let tipoAccion = ''; // ENTRADA o SALIDA
+  let tipoAccion = '';
   let coords = { latitude: 0, longitude: 0 };
+  let fotoFinal = null;
 
-  window.onload = () => {
-    navigator.geolocation.getCurrentPosition(p => coords = p.coords);
+  // Al cargar, verificar sesión
+  window.addEventListener('DOMContentLoaded', () => {
+    navigator.geolocation.watchPosition(p => coords = p.coords, null, {enableHighAccuracy:true});
+    
     const user = localStorage.getItem('user_id');
     if (user) {
-        document.getElementById('menu-user').innerText = user;
+        document.getElementById('menu-user').innerText = "Usuario: " + user;
         actualizarInterfazTurno();
         irA('scr-rondin');
     } else {
         irA('scr-login');
     }
-  };
-
-  async function login() {
-    const user = document.getElementById('user-id').value;
-    const pass = document.getElementById('pass').value;
-    if(!user || !pass) return alert("Completa los datos");
-
-    document.getElementById('loader').style.display = 'flex';
-    try {
-        const resp = await fetch(`${webAppUrl}?user=${user}&pass=${pass}`);
-        const txt = await resp.text();
-        if(txt === "VALIDO") {
-            localStorage.setItem('user_id', user);
-            location.reload();
-        } else {
-            alert("Usuario o clave incorrecta");
-        }
-    } catch(e) { alert("Error de conexión"); }
-    document.getElementById('loader').style.display = 'none';
-  }
-
-  // --- COMPATIBILIDAD CON TU DO-POST ---
-  async function apiPost(datos) {
-    document.getElementById('loader').style.display = 'flex';
-    try {
-        await fetch(webAppUrl, {
-            method: "POST",
-            mode: "no-cors",
-            body: JSON.stringify(datos)
-        });
-        return true;
-    } catch (e) { return false; }
-    finally { document.getElementById('loader').style.display = 'none'; }
-  }
-
-  async function confirmarBiometria() {
-    const user = localStorage.getItem('user_id');
-    const foto = capturarFoto(document.getElementById('video-face'));
-
-    const ok = await apiPost({
-        action: "ASISTENCIA", // Como lo espera tu script
-        user: user,
-        tipo: tipoAccion,
-        img: foto, // Tu script usa 'img'
-        lat: coords.latitude,
-        lon: coords.longitude // Tu script usa 'lon'
-    });
-
-    localStorage.setItem('jornada_activa', (tipoAccion === 'ENTRADA' ? 'true' : 'false'));
-    apagarCamaras();
-    actualizarInterfazTurno();
-    irA('scr-rondin');
-    alert("Registro enviado");
-  }
-
-  async function enviarRegistro() {
-    const qr = document.getElementById('qr-res').value;
-    const user = localStorage.getItem('user_id');
-    if(!qr || qr === "---") return alert("Escanea un QR");
-
-    const foto = capturarFoto(document.getElementById('video-evidencia'));
-
-    const ok = await apiPost({
-        action: "RONDIN", // Como lo espera tu script
-        user: user,
-        qr: qr,
-        notas: document.getElementById('notes').value,
-        img: foto,
-        lat: coords.latitude,
-        lon: coords.longitude
-    });
-
-    alert("✅ Enviado a Excel y Drive");
-    document.getElementById('qr-res').value = "";
-    document.getElementById('notes').value = "";
-    apagarCamaras();
-  }
-
-  function capturarFoto(video) {
-    const c = document.getElementById('canvas-wm');
-    const ctx = c.getContext('2d');
-    c.width = 480; c.height = 640; // Tamaño optimizado
-    ctx.drawImage(video, 0, 0, c.width, c.height);
-    return c.toDataURL('image/jpeg', 0.5);
-  }
+  });
 
   // --- NAVEGACIÓN ---
-  function actualizarInterfazTurno() {
-    const activa = localStorage.getItem('jornada_activa') === 'true';
-    document.getElementById('lock-global').style.display = activa ? 'none' : 'flex';
-    document.getElementById('jornada-stat').innerText = activa ? "TURNO: ACTIVO" : "TURNO: CERRADO";
-    document.getElementById('jornada-stat').className = "stat-badge " + (activa ? "badge-on" : "badge-off");
+  function irA(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById(id);
+    if(target) target.classList.add('active');
   }
 
-  function irABiometria(tipo) {
-    tipoAccion = tipo;
-    toggleMenu();
-    irA('scr-face');
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }).then(s => {
-        streamActivo = s; document.getElementById('video-face').srcObject = s;
-    });
+  function toggleMenu() {
+    const m = document.getElementById('side-menu');
+    const o = document.getElementById('overlay');
+    m.classList.toggle('menu-open');
+    o.style.display = m.classList.contains('menu-open') ? 'block' : 'none';
   }
 
-  async function activarQR() {
-    document.getElementById('box-qr').style.display = 'block';
-    scanner = new Html5Qrcode("qr-reader");
-    scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (txt) => {
-        document.getElementById('qr-res').value = txt;
-        await scanner.stop();
-        document.getElementById('box-qr').style.display = 'none';
-    });
-  }
-
-  function activarEvidencia() {
-    document.getElementById('box-evidencia').style.display = 'block';
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(s => {
-        streamActivo = s; document.getElementById('video-evidencia').srcObject = s;
-    });
-  }
-
-  function apagarCamaras() {
-    if(streamActivo) streamActivo.getTracks().forEach(t => t.stop());
+  // --- CÁMARAS Y QR ---
+  async function apagarTodo() {
+    if(scanner) { try { await scanner.stop(); } catch(e){} scanner = null; }
+    if(streamActivo) { streamActivo.getTracks().forEach(t => t.stop()); streamActivo = null; }
+    document.getElementById('box-qr').style.display = 'none';
     document.getElementById('box-evidencia').style.display = 'none';
   }
 
-  function cerrarSesionApp() { localStorage.removeItem('user_id'); location.reload(); }
-  function toggleMenu() { document.getElementById('side-menu').classList.toggle('menu-open'); document.getElementById('overlay').style.display = document.getElementById('side-menu').classList.contains('menu-open') ? 'block' : 'none'; }
-  function irA(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+  async function toggleQR() {
+    const box = document.getElementById('box-qr');
+    const qrInput = document.getElementById('qr-res');
+    
+    if (box.style.display === 'block') {
+        await apagarTodo();
+    } else {
+        await apagarTodo();
+        // Reset por si hubo error previo
+        if(qrInput.value !== "PUNTO NO LEÍDO") qrInput.value = "";
+
+        box.style.display = 'block';
+        scanner = new Html5Qrcode("qr-reader");
+        scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+            qrInput.value = txt;
+            document.getElementById('btn-qr-main').innerText = "🔄 REPETIR SCAN";
+            apagarTodo();
+        }).catch(e => {
+            alert("Error al abrir cámara QR");
+            box.style.display = 'none';
+        });
+    }
+  }
+
+  async function toggleEvidencia() {
+    const box = document.getElementById('box-evidencia');
+    const v = document.getElementById('video-evidencia');
+    const p = document.getElementById('preview-img');
+
+    if (box.style.display === 'block') {
+        await apagarTodo();
+    } else {
+        await apagarTodo();
+        box.style.display = 'block';
+        v.style.display = 'block';
+        p.style.display = 'none';
+        document.getElementById('btn-snap').style.display = 'block';
+
+        try {
+            const s = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment', width: 720 } 
+            });
+            streamActivo = s;
+            v.srcObject = s;
+        } catch (e) {
+            alert("Error al abrir cámara de fotos");
+            box.style.display = 'none';
+        }
+    }
+  }
+
+  function capturarYCongelar() {
+    const v = document.getElementById('video-evidencia');
+    const c = document.getElementById('canvas-wm');
+    const p = document.getElementById('preview-img');
+    
+    c.width = 720; c.height = 1000;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(v, 0, 0, c.width, c.height);
+    
+    // Marca de agua
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(0, c.height-120, c.width, 120);
+    ctx.fillStyle = "white";
+    ctx.font = "bold 24px Arial";
+    ctx.fillText(`OPERADOR: ${localStorage.getItem('user_id')}`, 20, c.height-80);
+    ctx.fillText(`FECHA: ${new Date().toLocaleString()}`, 20, c.height-50);
+    ctx.fillText(`GPS: ${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`, 20, c.height-20);
+    
+    fotoFinal = c.toDataURL('image/jpeg', 0.7);
+    p.src = fotoFinal;
+    p.style.display = 'block';
+    v.style.display = 'none';
+    document.getElementById('btn-snap').style.display = 'none';
+    document.getElementById('btn-foto-trigger').innerText = "🔄 REPETIR FOTO";
+    
+    if(streamActivo) { streamActivo.getTracks().forEach(t => t.stop()); streamActivo = null; }
+  }
+
+  // --- LÓGICA DE NEGOCIO ---
+  async function login() {
+    const u = document.getElementById('user-id').value;
+    const p = document.getElementById('pass').value;
+    if(!u || !p) return alert("Ingresa datos");
+
+    mostrarLoader("VALIDANDO...", true);
+    try {
+        const res = await fetch(`${webAppUrl}?user=${u}&pass=${p}`);
+        const text = await res.text();
+        if(text === "VALIDO") {
+            localStorage.setItem('user_id', u);
+            location.reload();
+        } else {
+            alert("Credenciales incorrectas");
+        }
+    } catch(e) { alert("Error de red"); }
+    mostrarLoader("", false);
+  }
+
+  async function enviarRegistroRondin() {
+    const qr = document.getElementById('qr-res').value;
+    if(qr === "PUNTO NO LEÍDO") return alert("Escanea el QR");
+    if(!fotoFinal) return alert("Toma la foto");
+
+    mostrarLoader("GUARDANDO...", true);
+    await fetch(webAppUrl, { method:"POST", mode:"no-cors", body: JSON.stringify({
+        action: "RONDIN", user: localStorage.getItem('user_id'),
+        qr: qr, notas: document.getElementById('notes').value,
+        img: fotoFinal, lat: coords.latitude, lon: coords.longitude
+    })});
+    alert("✅ Registro guardado");
+    location.reload();
+  }
+
+  async function confirmarBiometria() {
+    const v = document.getElementById('video-face');
+    const c = document.getElementById('canvas-wm');
+    c.width = 480; c.height = 640;
+    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+    const f = c.toDataURL('image/jpeg', 0.5);
+
+    mostrarLoader("REGISTRANDO...", true);
+    await fetch(webAppUrl, { method:"POST", mode:"no-cors", body: JSON.stringify({
+        action: "ASISTENCIA", user: localStorage.getItem('user_id'),
+        tipo: tipoAccion, img: f, lat: coords.latitude, lon: coords.longitude
+    })});
+    localStorage.setItem('jornada_activa', (tipoAccion === 'ENTRADA' ? 'true' : 'false'));
+    location.reload();
+  }
+
+  function actualizarInterfazTurno() {
+    const activa = localStorage.getItem('jornada_activa') === 'true';
+    document.getElementById('lock-global').style.display = activa ? 'none' : 'block';
+    document.getElementById('controls-rondin').style.opacity = activa ? '1' : '0.2';
+    document.getElementById('controls-rondin').style.pointerEvents = activa ? 'auto' : 'none';
+    
+    const stat = document.getElementById('jornada-stat');
+    stat.innerText = activa ? "TURNO ON" : "TURNO OFF";
+    stat.className = "stat-badge " + (activa ? "badge-on" : "badge-off");
+    
+    document.getElementById('btn-menu-entrada').style.display = activa ? 'none' : 'block';
+    document.getElementById('btn-menu-salida').style.display = activa ? 'block' : 'none';
+  }
+
+  function irABiometria(t) {
+    tipoAccion = t;
+    toggleMenu();
+    irA('scr-face');
+    document.getElementById('face-title').innerText = "VERIFICAR " + t;
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }).then(s => {
+        streamActivo = s;
+        document.getElementById('video-face').srcObject = s;
+    });
+  }
+
+  function mostrarLoader(t, v) {
+    document.getElementById('loader-text').innerText = t;
+    document.getElementById('loader').style.display = v ? 'flex' : 'none';
+  }
+
+  function cerrarSesionApp() {
+    localStorage.clear();
+    location.reload();
+  }
 </script>
 </body>
 </html>
