@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sentry Pro v16.7 - Industrial Build</title>
+  <title>Sentry Pro v16.9 - Full Watermark Sync</title>
   
   <script src="https://unpkg.com/html5-qrcode"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -13,73 +13,23 @@
       --primary: #3b82f6; --bg: #020617; --card: #0f172a; --text: #f1f5f9;
       --success: #10b981; --danger: #ef4444; --border: rgba(255, 255, 255, 0.1);
     }
-
-    /* Forzar visibilidad base para evitar pantalla negra */
-    html, body { 
-      background-color: #020617 !important; 
-      color: #f1f5f9; 
-      margin: 0; padding: 0;
-      min-height: 100vh;
-      font-family: sans-serif;
-    }
-
+    html, body { background-color: #020617 !important; color: #f1f5f9; margin: 0; padding: 0; min-height: 100vh; font-family: sans-serif; }
     .screen { display: none; padding: 15px; }
     .active { display: block !important; }
-
-    /* Contenedores Pro */
-    .premium-card { 
-      background: #0f172a; 
-      border-radius: 16px; 
-      padding: 20px; 
-      border: 1px solid var(--border);
-      margin-bottom: 15px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    }
-
-    .top-nav { 
-      display: flex; justify-content: space-between; align-items: center; 
-      padding: 12px 20px; background: #0f172a; 
-      border-bottom: 1px solid var(--border);
-    }
-
+    .premium-card { background: #0f172a; border-radius: 16px; padding: 20px; border: 1px solid var(--border); margin-bottom: 15px; }
+    .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: #0f172a; border-bottom: 1px solid var(--border); }
     .stat-badge { font-size: 11px; padding: 4px 12px; border-radius: 50px; font-weight: bold; border: 1px solid; }
     .badge-on { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: #10b981; }
     .badge-off { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: #ef4444; }
-
-    /* Cámaras */
-    .cam-box { 
-      width: 100%; border-radius: 12px; overflow: hidden; 
-      background: #000; border: 1px solid var(--border); 
-      position: relative; min-height: 240px;
-    }
-    video, img#preview-img { width: 100%; height: auto; display: block; object-fit: cover; }
-
-    /* Botones Masivos */
-    .btn-massive { 
-      height: 58px; border-radius: 12px; font-weight: bold; 
-      text-transform: uppercase; border: none; width: 100%; 
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-    }
+    .cam-box { width: 100%; border-radius: 12px; overflow: hidden; background: #000; border: 1px solid var(--border); position: relative; min-height: 240px; }
+    video, img#preview-img, img#preview-bio { width: 100%; height: auto; display: block; object-fit: cover; }
+    .btn-massive { height: 58px; border-radius: 12px; font-weight: bold; text-transform: uppercase; border: none; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
     .btn-primary-pro { background: #2563eb; color: white; }
     .btn-success-pro { background: #059669; color: white; }
-
-    /* Menú */
-    #side-menu { 
-      position: fixed; top: 0; left: -100%; width: 80%; height: 100%; 
-      background: #0f172a; z-index: 1001; transition: 0.3s; 
-      padding: 25px; border-right: 1px solid var(--border); 
-    }
+    #side-menu { position: fixed; top: 0; left: -100%; width: 80%; height: 100%; background: #0f172a; z-index: 1001; transition: 0.3s; padding: 25px; border-right: 1px solid var(--border); }
     .menu-open { left: 0 !important; }
-    .menu-overlay { 
-      position: fixed; inset: 0; background: rgba(0,0,0,0.7); 
-      z-index: 1000; display: none; 
-    }
-
-    #loader { 
-      position: fixed; inset: 0; background: rgba(2, 6, 23, 0.9); 
-      display: none; flex-direction: column; justify-content: center; 
-      align-items: center; z-index: 9999; 
-    }
+    .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: none; }
+    #loader { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
   </style>
 </head>
 <body>
@@ -95,9 +45,9 @@
     <h3 class="fw-bold mb-2">SENTRY <span style="color:var(--primary)">PRO</span></h3>
     <p id="menu-user" class="small text-muted mb-4">--</p>
     <div class="list-group list-group-flush">
-        <button id="btn-menu-entrada" onclick="irABiometria('ENTRADA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3">🕒 Iniciar Turno</button>
-        <button id="btn-menu-salida" onclick="irABiometria('SALIDA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3">🏁 Finalizar Turno</button>
-        <button onclick="cerrarSesionApp()" class="list-group-item list-group-item-action bg-transparent text-danger border-0 py-3 mt-4">Cerrar Sesión</button>
+        <button id="btn-menu-entrada" onclick="irABiometria('ENTRADA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3 tracking-wide">🕒 Iniciar Turno</button>
+        <button id="btn-menu-salida" onclick="irABiometria('SALIDA')" class="list-group-item list-group-item-action bg-transparent text-white border-0 py-3 tracking-wide">🏁 Finalizar Turno</button>
+        <button onclick="cerrarSesionApp()" class="list-group-item list-group-item-action bg-transparent text-danger border-0 py-3 mt-4 fw-bold">🚪 Cerrar Sesión</button>
     </div>
   </div>
 
@@ -118,30 +68,23 @@
         <div onclick="toggleMenu()" style="cursor:pointer; font-size: 24px;">☰</div>
         <div id="jornada-stat" class="stat-badge badge-off">TURNO OFF</div>
     </div>
-    
     <div class="px-3 pt-3">
         <div class="premium-card">
             <div id="lock-global" style="display:none; text-align:center; padding: 20px;">
-                <h4 class="fw-bold text-danger">TURNO CERRADO</h4>
-                <p class="small">Inicia turno en el menú lateral para operar.</p>
+                <h4 class="fw-bold text-danger">⚠️ TURNO CERRADO</h4>
+                <p class="small">Inicia turno en el menú lateral (☰) para operar.</p>
             </div>
-
             <div id="controls-rondin">
                 <button id="btn-qr-main" onclick="toggleQR()" class="btn btn-primary-pro btn-massive mb-3">1. SCAN QR ⚡</button>
-                <div class="cam-box mb-3" id="box-qr" style="display:none;">
-                    <div id="qr-reader" style="width:100%"></div>
-                </div>
+                <div class="cam-box mb-3" id="box-qr" style="display:none;"><div id="qr-reader" style="width:100%"></div></div>
                 <input type="text" id="qr-res" class="form-control text-center fw-bold border-0 bg-transparent text-primary mb-3" value="PUNTO NO LEÍDO" readonly>
-
                 <button id="btn-foto-trigger" onclick="toggleEvidencia()" class="btn btn-success-pro btn-massive mb-3">2. TOMAR FOTO 📸</button>
                 <div class="cam-box mb-3" id="box-evidencia" style="display:none;">
                     <video id="video-evidencia" autoplay playsinline></video>
                     <img id="preview-img" style="display:none;">
                     <button id="btn-snap" onclick="capturarYCongelar()" class="btn btn-danger w-100 py-3 fw-bold position-absolute bottom-0">CAPTURAR EVIDENCIA</button>
                 </div>
-
-                <textarea id="notes" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Observaciones..."></textarea>
-                
+                <textarea id="notes" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Observaciones (opcional)..."></textarea>
                 <button onclick="enviarRegistroRondin()" class="btn btn-massive" style="background:white; color:black;">GUARDAR REGISTRO</button>
             </div>
         </div>
@@ -149,17 +92,20 @@
   </div>
 
   <div id="scr-face" class="screen">
-    <div class="text-center mb-4"><h5 class="fw-bold" id="face-title">VERIFICACIÓN</h5></div>
-    <div class="cam-box mb-4"><video id="video-face" autoplay playsinline></video></div>
-    <button onclick="confirmarBiometria()" class="btn btn-primary-pro btn-massive">CONFIRMAR IDENTIDAD</button>
+    <div class="text-center mb-4"><h5 class="fw-bold" id="face-title">VERIFICACIÓN BIOMÉTRICA</h5></div>
+    <div class="cam-box mb-4 shadow-lg" style="border: 2px solid var(--primary);">
+        <video id="video-face" autoplay playsinline></video>
+        <img id="preview-bio" style="display:none;">
+        <button id="btn-snap-bio" onclick="capturarYCongelarBio()" class="btn btn-primary w-100 py-3 fw-bold position-absolute bottom-0">CAPTURAR MI ROSTRO</button>
+    </div>
+    <button id="btn-confirmar-bio" onclick="enviarBiometriaFinal()" class="btn btn-primary-pro btn-massive" style="display:none;">CONFIRMAR IDENTIDAD Y REGISTRAR</button>
     <button onclick="location.reload()" class="btn btn-link w-100 text-muted mt-2">Cancelar</button>
   </div>
 
   <canvas id="canvas-wm" style="display:none;"></canvas>
 
 <script>
-  // URL de tu Google App Script
-  const webAppUrl = "https://script.google.com/macros/s/AKfycbz8qrLP1pl2cgL4IpdNdwfed2evp5xr9hSK2PIzXxcYOQBIi82HYCzL8ctKvlZtagFb/exec";
+  const webAppUrl = "https://script.google.com/macros/s/AKfycbxXAvfizReXhw6GRS3MVM3NNqjelXyeMFbbNx8msyf6e8OULXtkYxpZK1Wp2hmmcCJA/exec";
 
   let streamActivo = null;
   let scanner = null;
@@ -167,35 +113,30 @@
   let coords = { latitude: 0, longitude: 0 };
   let fotoFinal = null;
 
-  // Al cargar, verificar sesión
-  window.addEventListener('DOMContentLoaded', () => {
+  window.onload = () => {
     navigator.geolocation.watchPosition(p => coords = p.coords, null, {enableHighAccuracy:true});
-    
     const user = localStorage.getItem('user_id');
+    actualizarInterfazTurno(); 
     if (user) {
-        document.getElementById('menu-user').innerText = "Usuario: " + user;
-        actualizarInterfazTurno();
+        document.getElementById('menu-user').innerText = "Usuario Activo: " + user;
         irA('scr-rondin');
     } else {
         irA('scr-login');
     }
-  });
+  };
 
   // --- NAVEGACIÓN ---
   function irA(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    const target = document.getElementById(id);
-    if(target) target.classList.add('active');
+    document.getElementById(id).classList.add('active');
   }
 
   function toggleMenu() {
     const m = document.getElementById('side-menu');
-    const o = document.getElementById('overlay');
     m.classList.toggle('menu-open');
-    o.style.display = m.classList.contains('menu-open') ? 'block' : 'none';
+    document.getElementById('overlay').style.display = m.classList.contains('menu-open') ? 'block' : 'none';
   }
 
-  // --- CÁMARAS Y QR ---
   async function apagarTodo() {
     if(scanner) { try { await scanner.stop(); } catch(e){} scanner = null; }
     if(streamActivo) { streamActivo.getTracks().forEach(t => t.stop()); streamActivo = null; }
@@ -203,78 +144,75 @@
     document.getElementById('box-evidencia').style.display = 'none';
   }
 
+  // --- LÓGICA UNIFICADA DE MARCA DE AGUA TÁCTICA ---
+  function estamparMarcaAgua(video, canvas, usuario, bio = false) {
+    // Si es biometría, usamos una resolución más baja para ahorrar datos, si no, alta resolución
+    canvas.width = bio ? 480 : 720;
+    canvas.height = bio ? 640 : 1280;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // 1. Dibujar imagen base
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // 2. Rectángulo de fondo para legibilidad
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.fillRect(0, canvas.height-140, canvas.width, 140);
+    
+    // 3. Estampar textos
+    const ahora = new Date().toLocaleString('es-MX', { hour12: false });
+    ctx.fillStyle = "white";
+    ctx.font = bio ? "bold 20px Arial" : "bold 28px Arial";
+    ctx.fillText(`ID: ${usuario}`, 25, canvas.height-90);
+    ctx.fillText(`FECHA: ${ahora}`, 25, canvas.height-55);
+    ctx.fillText(`GPS: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`, 25, canvas.height-20);
+    
+    // Devolver calidad optimizada
+    return canvas.toDataURL('image/jpeg', 0.6);
+  }
+
+  // --- CÁMARAS RONDÍN (Trasera) ---
   async function toggleQR() {
     const box = document.getElementById('box-qr');
-    const qrInput = document.getElementById('qr-res');
-    
-    if (box.style.display === 'block') {
+    if (box.style.display === 'block') { await apagarTodo(); } 
+    else {
         await apagarTodo();
-    } else {
-        await apagarTodo();
-        // Reset por si hubo error previo
-        if(qrInput.value !== "PUNTO NO LEÍDO") qrInput.value = "";
-
         box.style.display = 'block';
         scanner = new Html5Qrcode("qr-reader");
         scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
-            qrInput.value = txt;
-            document.getElementById('btn-qr-main').innerText = "🔄 REPETIR SCAN";
+            document.getElementById('qr-res').value = txt;
+            document.getElementById('btn-qr-main').innerText = "🔄 REPETIR SCAN QR";
             apagarTodo();
-        }).catch(e => {
-            alert("Error al abrir cámara QR");
-            box.style.display = 'none';
-        });
+        }).catch(e => { alert("Error QR"); box.style.display = 'none'; });
     }
   }
 
   async function toggleEvidencia() {
     const box = document.getElementById('box-evidencia');
-    const v = document.getElementById('video-evidencia');
-    const p = document.getElementById('preview-img');
-
-    if (box.style.display === 'block') {
-        await apagarTodo();
-    } else {
+    if (box.style.display === 'block') { await apagarTodo(); } 
+    else {
         await apagarTodo();
         box.style.display = 'block';
-        v.style.display = 'block';
-        p.style.display = 'none';
+        document.getElementById('video-evidencia').style.display = 'block';
+        document.getElementById('preview-img').style.display = 'none';
         document.getElementById('btn-snap').style.display = 'block';
-
         try {
-            const s = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'environment', width: 720 } 
-            });
+            const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: {ideal: 1280} } });
             streamActivo = s;
-            v.srcObject = s;
-        } catch (e) {
-            alert("Error al abrir cámara de fotos");
-            box.style.display = 'none';
-        }
+            document.getElementById('video-evidencia').srcObject = s;
+        } catch (e) { alert("Error Cámara"); box.style.display = 'none'; }
     }
   }
 
   function capturarYCongelar() {
     const v = document.getElementById('video-evidencia');
     const c = document.getElementById('canvas-wm');
-    const p = document.getElementById('preview-img');
+    const user = localStorage.getItem('user_id');
     
-    c.width = 720; c.height = 1000;
-    const ctx = c.getContext('2d');
-    ctx.drawImage(v, 0, 0, c.width, c.height);
+    fotoFinal = estamparMarcaAgua(v, c, user, false); // Aplica marca de agua
     
-    // Marca de agua
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(0, c.height-120, c.width, 120);
-    ctx.fillStyle = "white";
-    ctx.font = "bold 24px Arial";
-    ctx.fillText(`OPERADOR: ${localStorage.getItem('user_id')}`, 20, c.height-80);
-    ctx.fillText(`FECHA: ${new Date().toLocaleString()}`, 20, c.height-50);
-    ctx.fillText(`GPS: ${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`, 20, c.height-20);
-    
-    fotoFinal = c.toDataURL('image/jpeg', 0.7);
-    p.src = fotoFinal;
-    p.style.display = 'block';
+    document.getElementById('preview-img').src = fotoFinal;
+    document.getElementById('preview-img').style.display = 'block';
     v.style.display = 'none';
     document.getElementById('btn-snap').style.display = 'none';
     document.getElementById('btn-foto-trigger').innerText = "🔄 REPETIR FOTO";
@@ -282,91 +220,114 @@
     if(streamActivo) { streamActivo.getTracks().forEach(t => t.stop()); streamActivo = null; }
   }
 
-  // --- LÓGICA DE NEGOCIO ---
+  // --- CÁMARAS BIOMETRÍA (Frontal + Marca de Agua) ---
+  function irABiometria(t) {
+    tipoAccion = t;
+    toggleMenu();
+    irA('scr-face');
+    document.getElementById('face-title').innerText = "VERIFICAR IDENTIDAD PARA " + t;
+    
+    // Reset de botones biométricos
+    document.getElementById('video-face').style.display = 'block';
+    document.getElementById('preview-bio').style.display = 'none';
+    document.getElementById('btn-snap-bio').style.display = 'block';
+    document.getElementById('btn-confirmar-bio').style.display = 'none';
+    fotoFinal = null;
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }).then(s => {
+        streamActivo = s;
+        document.getElementById('video-face').srcObject = s;
+    }).catch(e => alert("Error al abrir cámara frontal. Revisa permisos."));
+  }
+
+  // Captura y Congela la biometría CON Marca de Agua
+  function capturarYCongelarBio() {
+    const v = document.getElementById('video-face');
+    const c = document.getElementById('canvas-wm');
+    const user = localStorage.getItem('user_id');
+    const preview = document.getElementById('preview-bio');
+    
+    mostrarLoader("ESTAMPANDO DATOS GPS...", true);
+    
+    // Usamos la misma función de estampado (pasando true en 'bio' para ajustar resolución)
+    fotoFinal = estamparMarcaAgua(v, c, user, true); 
+    
+    // Congelamos UI y mostramos el botón de enviar
+    preview.src = fotoFinal;
+    preview.style.display = 'block';
+    v.style.display = 'none';
+    document.getElementById('btn-snap-bio').style.display = 'none';
+    document.getElementById('btn-confirmar-bio').style.display = 'block'; // Aparece el botón de enviar
+    
+    // Apagamos cámara para ahorrar batería
+    if(streamActivo) { streamActivo.getTracks().forEach(t => t.stop()); streamActivo = null; }
+    mostrarLoader("", false);
+  }
+
+  // --- SINCRONIZACIÓN GOOGLE SHEETS ---
   async function login() {
     const u = document.getElementById('user-id').value;
     const p = document.getElementById('pass').value;
     if(!u || !p) return alert("Ingresa datos");
-
-    mostrarLoader("VALIDANDO...", true);
+    mostrarLoader("VALIDANDO CREDENCIALES...", true);
     try {
         const res = await fetch(`${webAppUrl}?user=${u}&pass=${p}`);
-        const text = await res.text();
-        if(text === "VALIDO") {
-            localStorage.setItem('user_id', u);
-            location.reload();
-        } else {
-            alert("Credenciales incorrectas");
-        }
-    } catch(e) { alert("Error de red"); }
+        if(await res.text() === "VALIDO") { localStorage.setItem('user_id', u); location.reload(); }
+        else alert("Credenciales incorrectas");
+    } catch(e) { alert("Error red"); }
     mostrarLoader("", false);
   }
 
   async function enviarRegistroRondin() {
     const qr = document.getElementById('qr-res').value;
-    if(qr === "PUNTO NO LEÍDO") return alert("Escanea el QR");
-    if(!fotoFinal) return alert("Toma la foto");
-
-    mostrarLoader("GUARDANDO...", true);
+    if(qr === "PUNTO NO LEÍDO") return alert("Escanea QR primero");
+    if(!fotoFinal) return alert("Toma foto de evidencia");
+    mostrarLoader("GUARDANDO EN DRIVE...", true);
     await fetch(webAppUrl, { method:"POST", mode:"no-cors", body: JSON.stringify({
-        action: "RONDIN", user: localStorage.getItem('user_id'),
-        qr: qr, notas: document.getElementById('notes').value,
-        img: fotoFinal, lat: coords.latitude, lon: coords.longitude
+        action: "RONDIN", user: localStorage.getItem('user_id'), qr: qr,
+        notas: document.getElementById('notes').value, img: fotoFinal, lat: coords.latitude, lon: coords.longitude
     })});
-    alert("✅ Registro guardado");
-    location.reload();
+    alert("✅ Registro guardado"); location.reload();
   }
 
-  async function confirmarBiometria() {
-    const v = document.getElementById('video-face');
-    const c = document.getElementById('canvas-wm');
-    c.width = 480; c.height = 640;
-    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-    const f = c.toDataURL('image/jpeg', 0.5);
-
-    mostrarLoader("REGISTRANDO...", true);
-    await fetch(webAppUrl, { method:"POST", mode:"no-cors", body: JSON.stringify({
-        action: "ASISTENCIA", user: localStorage.getItem('user_id'),
-        tipo: tipoAccion, img: f, lat: coords.latitude, lon: coords.longitude
-    })});
-    localStorage.setItem('jornada_activa', (tipoAccion === 'ENTRADA' ? 'true' : 'false'));
-    location.reload();
+  // Se ejecuta al confirmar la foto congelada con marca de agua
+  async function enviarBiometriaFinal() {
+    if(!fotoFinal) return alert("Captura tu rostro primero");
+    mostrarLoader("REGISTRANDO ASISTENCIA...", true);
+    try {
+        await fetch(webAppUrl, { method:"POST", mode:"no-cors", body: JSON.stringify({
+            action: "ASISTENCIA", user: localStorage.getItem('user_id'),
+            tipo: tipoAccion, img: fotoFinal, // Envía la foto CON marca de agua
+            lat: coords.latitude, lon: coords.longitude
+        })});
+        // Actualizar estado local
+        localStorage.setItem('jornada_activa', (tipoAccion === 'ENTRADA' ? 'true' : 'false'));
+        alert("✅ Registro exitoso");
+        location.reload();
+    } catch(e) { alert("Error al registrar"); mostrarLoader("", false); }
   }
 
+  // --- UI HELPERS ---
   function actualizarInterfazTurno() {
     const activa = localStorage.getItem('jornada_activa') === 'true';
     document.getElementById('lock-global').style.display = activa ? 'none' : 'block';
     document.getElementById('controls-rondin').style.opacity = activa ? '1' : '0.2';
     document.getElementById('controls-rondin').style.pointerEvents = activa ? 'auto' : 'none';
-    
     const stat = document.getElementById('jornada-stat');
     stat.innerText = activa ? "TURNO ON" : "TURNO OFF";
     stat.className = "stat-badge " + (activa ? "badge-on" : "badge-off");
-    
     document.getElementById('btn-menu-entrada').style.display = activa ? 'none' : 'block';
     document.getElementById('btn-menu-salida').style.display = activa ? 'block' : 'none';
   }
 
-  function irABiometria(t) {
-    tipoAccion = t;
-    toggleMenu();
-    irA('scr-face');
-    document.getElementById('face-title').innerText = "VERIFICAR " + t;
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }).then(s => {
-        streamActivo = s;
-        document.getElementById('video-face').srcObject = s;
-    });
-  }
-
-  function mostrarLoader(t, v) {
-    document.getElementById('loader-text').innerText = t;
-    document.getElementById('loader').style.display = v ? 'flex' : 'none';
-  }
+  function mostrarLoader(t, v) { document.getElementById('loader-text').innerText = t; document.getElementById('loader').style.display = v ? 'flex' : 'none'; }
 
   function cerrarSesionApp() {
-    localStorage.clear();
-    location.reload();
+    if(confirm("¿Cerrar sesión de la App?\n\n(Esto no cierra tu turno en Excel, solo borra tu ID del celular)")) {
+        localStorage.removeItem('user_id'); location.reload(); 
+    }
   }
 </script>
 </body>
 </html>
+
